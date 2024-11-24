@@ -1,49 +1,44 @@
-// Header.tsx
 import React from 'react';
-
-const Header = () => {
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+const Header: React.FC = () => {
   return (
-    <header style={styles.header}>
-      <div style={styles.logoContainer}>
-        <img src="/path/to/logo.png" alt="Logo" style={styles.logo} />
+    <header
+      style={{
+        padding: '12px 24px',
+        backgroundColor: '#ffffff',
+        borderBottom: '1px solid #e0e0e0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          flex: 1,
+          maxWidth: '600px',
+          margin: '0 auto',
+        }}
+      >
+        <input
+          type="search"
+          placeholder="Search"
+          style={{
+            width: '100%',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            border: 'none',
+            backgroundColor: '#f5f5f5',
+            fontSize: '14px',
+          }}
+        />
       </div>
-      <input type="text" placeholder="Search..." style={styles.searchBar} />
-      <div style={styles.walletAddress}>
-        <span>0xYourWalletAddress</span>
-      </div>
+      <ConnectButton />
     </header>
   );
 };
-
-const styles = {
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '10px 20px',
-    backgroundColor: '#f0f0f0',
-    borderBottom: '1px solid #ddd',
-  },
-  logoContainer: {
-    display: 'flex',
-    alignItems: 'center',
-  },
-  logo: {
-    width: '40px',
-    height: '40px',
-    marginRight: '10px',
-  },
-  searchBar: {
-    flex: 1,
-    padding: '5px 10px',
-    margin: '0 20px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-  },
-  walletAddress: {
-    fontSize: '14px',
-    color: '#333',
-  },
-};
-
 export default Header;
