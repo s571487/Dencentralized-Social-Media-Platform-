@@ -19,6 +19,7 @@ contract EncryptedKeyStorage {
         emit KeysStored(msg.sender);
     }
 
+    /// AES 256 Encryption to encrypt public and private key
     /// @notice Retrieves encrypted keys for a given user address
     /// @param user The address of the user
     /// @return encryptedPublicKey The encrypted public key
