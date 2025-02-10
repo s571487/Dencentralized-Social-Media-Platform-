@@ -55,7 +55,25 @@ const Profile: React.FC<ProfileProps> = ({ userAddress }) => {
     }
   }, [userAddress]);
 
-  
+  return (
+    <div className="p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+      <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Profile</h2>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-gray-600 dark:text-gray-400">Connected Address:</label>
+          <input type="text" className="w-full px-4 py-2 mt-1 border rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white" value={userAddress} readOnly />
+        </div>
+        <div>
+          <label className="block text-gray-600 dark:text-gray-400">DeSocial Address:</label>
+          <input type="text" className="w-full px-4 py-2 mt-1 border rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white" value={desocialAddress} readOnly />
+        </div>
+        <div>
+          <label className="block text-gray-600 dark:text-gray-400">DeSocial Private Key:</label>
+          <input type="text" className="w-full px-4 py-2 mt-1 border rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white" value={desocialPrivateKey} readOnly />
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default Profile;
