@@ -1,59 +1,63 @@
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
-import CryptoJS from "crypto-js";
+import { fetchUserData, getBalance } from "../contracts/contractInteractions";
 
 interface ProfileProps {
   userAddress: string;
 }
 
-const contractAddress = "0x4aF6DE7c9976C4415c4C6cb48301337C6CCF4d95";
-const contractABI = [
-  "function getUserData(address user) view returns (string, string)",
-];
-
 const Profile: React.FC<ProfileProps> = ({ userAddress }) => {
   const [desocialAddress, setDeSocialAddress] = useState("");
   const [desocialPrivateKey, setDeSocialPrivateKey] = useState("");
-
-  // Function to derive key and IV from userAddress
-  const deriveKeyAndIV = (useraddress) => {
-    const hash = CryptoJS.SHA256(useraddress);
-    const key = CryptoJS.enc.Hex.parse(hash.toString().substring(0, 64)); // First 32 bytes for the key
-    const iv = CryptoJS.enc.Hex.parse(hash.toString().substring(64, 96)); // Next 16 bytes for the IV
-    return { key, iv };
-  };
-
-  const decryptData = (encryptedText) => {
-    const decrypted = CryptoJS.AES.decrypt(encryptedText, key, { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 });
-    return decrypted.toString(CryptoJS.enc.Utf8);
-  };
+  const [balance, setBalance] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchData = async () => {
       if (!window.ethereum) {
         console.error("MetaMask is not installed.");
         return;
       }
 
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const contract = new ethers.Contract(contractAddress, contractABI, provider);
 
       try {
-        const [encryptedAddress, encryptedPrivateKey] = await contract.getUserData(userAddress);
-        console.log("Encrypted Address:", encryptedAddress);
-        console.log("Encrypted Private Key:", encryptedPrivateKey);
-
+        const {encryptedAddress,encryptedPrivateKey} = await fetchUserData(provider, userAddress);
+        console.log("Profile encryptedAddress", encryptedPrivateKey);
+        
         setDeSocialAddress(encryptedAddress);
         setDeSocialPrivateKey(encryptedPrivateKey);
+
+        // Fetch initial balance
+        updateBalance(provider, encryptedAddress);
       } catch (error) {
         console.error("Error fetching user data:", error);
       }
     };
 
+    const updateBalance = async (provider: ethers.Provider, address: string) => {
+      try {
+        const balance = await getBalance(provider, address);
+        setBalance(balance);
+      } catch (error) {
+        console.error("Error fetching balance:", error);
+      }
+    };
+
     if (userAddress) {
-      fetchUserData();
+      fetchData();
+
+      // Set up a polling mechanism to update the balance every 10 seconds
+      const interval = setInterval(() => {
+        if (desocialAddress) {
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          updateBalance(provider, desocialAddress);
+        }
+      }, 10000);
+
+      // Clear the interval when the component unmounts or when userAddress changes
+      return () => clearInterval(interval);
     }
-  }, [userAddress]);
+  }, [userAddress, desocialAddress]);
 
   return (
     <div className="p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -70,6 +74,10 @@ const Profile: React.FC<ProfileProps> = ({ userAddress }) => {
         <div>
           <label className="block text-gray-600 dark:text-gray-400">DeSocial Private Key:</label>
           <input type="text" className="w-full px-4 py-2 mt-1 border rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white" value={desocialPrivateKey} readOnly />
+        </div>
+        <div>
+          <label className="block text-gray-600 dark:text-gray-400">Balance (Base Sepolia):</label>
+          <input type="text" className="w-full px-4 py-2 mt-1 border rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white" value={balance ? `${balance} ETH` : "Loading..."} readOnly />
         </div>
       </div>
     </div>
