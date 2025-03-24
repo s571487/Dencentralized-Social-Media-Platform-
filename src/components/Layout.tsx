@@ -48,7 +48,7 @@ const Layout: React.FC<LayoutProps> = ({ userAddress, createNewWallet, getWallet
     <div className={`min-h-screen ${isDarkMode ? 'dark' : ''} bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:bg-gray-900`}>
       <Header userAddress={userAddress} isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
       <div className="flex max-w-7xl mx-auto pt-16">
-        <Sidebar setSelectedOption={setSelectedOption} />
+        <Sidebar setSelectedOption={setSelectedOption} isDarkMode={isDarkMode} />
         <main className="flex-1 px-4 py-6">
           {renderContent()}
         </main>
