@@ -16,7 +16,7 @@ const Header: React.FC<HeaderProps> = ({ userAddress, isDarkMode, toggleDarkMode
         </div>
 
         <div className="max-w-xl w-full mx-4">
-          <div className="relative">
+          {/* <div className="relative">
             <input
               type="text"
               placeholder="Search..."
@@ -26,7 +26,7 @@ const Header: React.FC<HeaderProps> = ({ userAddress, isDarkMode, toggleDarkMode
                        transition-all duration-200"
             />
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 dark:text-gray-500" />
-          </div>
+          </div> */}
         </div>
 
         <div className="flex items-center space-x-4">
