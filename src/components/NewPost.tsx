@@ -5,8 +5,7 @@ import { fetchUserData } from "../contracts/contractInteractions";
 import { pinata } from "../utils/config";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { contractAddress, contractABI, getTotalPosts } from '../contracts/contractInteractions'; // Adjust the import path as needed
-
+import { contractAddress, contractABI } from '../contracts/contractInteractions';
 
 const NewPost = () => {
   const [description, setDescription] = useState('');
@@ -22,18 +21,14 @@ const NewPost = () => {
   const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.size <= 5 * 1024 * 1024) {
-      console.log("Media file selected:", file.name);
       setMedia(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      setPreviewUrl(URL.createObjectURL(file));
     } else {
-      console.warn('File size exceeds 5MB limit.');
       toast.error('File size exceeds 5MB limit.');
     }
   };
 
   const removeMedia = () => {
-    console.log("Removing media file...");
     setMedia(null);
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
@@ -43,10 +38,9 @@ const NewPost = () => {
 
   const handlePost = async () => {
     setIsPosting(true);
-    console.log("Posting new content...");
+    toast.info("Posting your content...");
 
     if (!window.ethereum) {
-      console.error("MetaMask is not installed.");
       toast.error("MetaMask is not installed.");
       setIsPosting(false);
       return;
@@ -56,47 +50,29 @@ const NewPost = () => {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
-
-      const { encryptedAddress, encryptedPrivateKey } = await fetchUserData(provider, userAddress);
-      console.log("Profile encryptedAddress", encryptedPrivateKey);
-
-      if (!encryptedPrivateKey) {
-        throw new Error("DeSocial private key not available");
-      }
+      
+      const { encryptedPrivateKey } = await fetchUserData(provider, userAddress);
+      if (!encryptedPrivateKey) throw new Error("DeSocial private key not available");
 
       let mediaHash = "";
-      let cid = "";
-
       if (media) {
-        console.log("Uploading media to IPFS...");
         const upload = await pinata.upload.file(media);
-        console.log("Pinata upload result:", upload);
         mediaHash = upload.IpfsHash;
-        cid = upload.IpfsHash;
       }
 
       const hashtagsArray = hashtags.split(',').map(tag => tag.trim());
       const wallet = new ethers.Wallet(encryptedPrivateKey, provider);
       const contract = getContract(wallet);
 
-      console.log("Sending transaction...");
-      const tx = await contract.createPost(description, hashtagsArray, mediaHash, cid);
-      console.log("Transaction hash:", tx.hash);
-
+      const tx = await contract.createPost(description, hashtagsArray, mediaHash, mediaHash);
       await tx.wait();
-      console.log("Transaction confirmed");
-
-      // Show success notification
+      
       toast.success("Post created successfully!");
-
-      // Reset form
       setDescription('');
       setHashtags('');
       setMedia(null);
       setPreviewUrl(null);
-
     } catch (error) {
-      console.error("Error creating post:", error);
       toast.error(`Error creating post: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsPosting(false);
@@ -111,47 +87,25 @@ const NewPost = () => {
 
       <div className="p-4 space-y-4">
         <textarea
-          className="w-full min-h-[120px] p-3 text-gray-900 dark:text-gray-100 bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
+          className="w-full min-h-[120px] p-3 text-gray-900 dark:text-gray-100 bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg resize-none focus:outline-none"
           placeholder="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
 
-        
-
         {!media ? (
-          <div className="relative">
-            <input
-              type="file"
-              accept="image/*,video/*"
-              onChange={handleMediaUpload}
-              className="hidden"
-              id="media-upload"
-            />
-            <label
-              htmlFor="media-upload"
-              className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
-            >
-              <div className="flex flex-col items-center space-y-2 text-gray-500 dark:text-gray-400">
-                <ImagePlus className="w-8 h-8" />
-                <span>Add photos or videos</span>
-                <span className="text-xs">Maximum file size: 5MB</span>
-              </div>
-            </label>
-          </div>
+          <label htmlFor="media-upload" className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer">
+            <div className="flex flex-col items-center space-y-2 text-gray-500 dark:text-gray-400">
+              <ImagePlus className="w-8 h-8" />
+              <span>Add photos or videos</span>
+              <span className="text-xs">Maximum file size: 5MB</span>
+            </div>
+            <input type="file" accept="image/*,video/*" onChange={handleMediaUpload} className="hidden" id="media-upload" />
+          </label>
         ) : (
           <div className="relative">
-            {previewUrl && (
-              <img
-                src={previewUrl}
-                alt="Preview"
-                className="w-full h-48 object-cover rounded-lg"
-              />
-            )}
-            <button
-              onClick={removeMedia}
-              className="absolute top-2 right-2 p-1 bg-gray-900/60 rounded-full text-white hover:bg-gray-900/80 transition-colors"
-            >
+            {previewUrl && <img src={previewUrl} alt="Preview" className="w-full h-48 object-cover rounded-lg" />}
+            <button onClick={removeMedia} className="absolute top-2 right-2 p-1 bg-gray-900/60 rounded-full text-white">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -160,23 +114,15 @@ const NewPost = () => {
 
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <button
-          className="w-full py-2.5 px-4 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+          className="w-full py-2.5 px-4 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600"
           onClick={handlePost}
           disabled={isPosting || (!description && !media)}
         >
-          {isPosting ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Posting...</span>
-            </>
-          ) : (
-            <span>Post</span>
-          )}
+          {isPosting ? <><Loader2 className="w-5 h-5 animate-spin" /><span>Posting...</span></> : <span>Post</span>}
         </button>
       </div>
 
-      {/* Toast Container */}
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick pauseOnHover draggable />
     </div>
   );
 };

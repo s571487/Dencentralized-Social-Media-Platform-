@@ -1,8 +1,14 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Check, X, Square, ClipboardList, ThumbsUp } from "lucide-react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Validator = () => {
+  const handleVote = (status) => {
+    toast.success(`Post ${status}`);
+  };
+
   return (
     <div className="p-6">
       {/* Top Boxes - Displays various statistics and controls */}
@@ -13,7 +19,9 @@ const Validator = () => {
             icon: Square,
             extra: (
               <div className="flex gap-2 mt-2">
-                <button className="text-white bg-green-600 px-2 py-1 border rounded-lg">Yes</button>
+                <button className="text-white bg-green-600 px-2 py-1 border rounded-lg">
+                  Yes
+                </button>
               </div>
             ),
           },
@@ -48,17 +56,24 @@ const Validator = () => {
         />
         {/* Caption of the post */}
         <p className="mt-2">This is a sample Instagram post caption.</p>
-        
+
         {/* Accept and Decline buttons */}
         <div className="flex justify-between mt-4">
-          <button className="text-green-600 border-green-600 flex items-center px-4 py-2 border rounded-lg">
+          <button
+            className="text-green-600 border-green-600 flex items-center px-4 py-2 border rounded-lg"
+            onClick={() => handleVote("Accepted")}
+          >
             <Check className="mr-2" /> Accept
           </button>
-          <button className="text-red-600 border-red-600 flex items-center px-4 py-2 border rounded-lg">
+          <button
+            className="text-red-600 border-red-600 flex items-center px-4 py-2 border rounded-lg"
+            onClick={() => handleVote("Declined")}
+          >
             <X className="mr-2" /> Decline
           </button>
         </div>
       </div>
+      <ToastContainer position="top-right" autoClose={2000} />
     </div>
   );
 };
