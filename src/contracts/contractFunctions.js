@@ -1,12 +1,21 @@
+import express from "express";
 import { ethers } from "ethers";
+import dotenv from "dotenv";
 
-// Contract Addresses
+dotenv.config();
+
+const app = express();
+app.use(express.json());
+
+// Ethereum Provider
+const provider = new ethers.JsonRpcProvider(process.env.INFURA_URL);
+
+// Smart Contract Details
 const CONTRACTS = {
   DeSocialProfileData: "0x4aF6DE7c9976C4415c4C6cb48301337C6CCF4d95",
   DeSocialPosts: "0xdd2D7Bb7b7D15658f838683fd94E840d08241Ced",
 };
 
-// ABIs
 const ABIS = {
   DeSocialProfileData: [
     "function getUserData(address user) public view returns (string memory, string memory)",
@@ -18,7 +27,7 @@ const ABIS = {
   ],
 };
 
-// Connect to Ethereum provider
+// Get Contract Instance
 async function getContract(contractName, signerOrProvider) {
   return new ethers.Contract(
     CONTRACTS[contractName],
@@ -27,58 +36,57 @@ async function getContract(contractName, signerOrProvider) {
   );
 }
 
-// Function to retrieve user data and initialize a wallet
-async function getUserWallet(userAddress, provider) {
+// Retrieve User Wallet
+async function getUserWallet(userAddress) {
   const profileContract = await getContract("DeSocialProfileData", provider);
   const [, privateKey] = await profileContract.getUserData(userAddress);
-
   if (!privateKey)
     throw new Error("User not registered or private key missing");
-
-  // Create wallet with private key
-  const wallet = new ethers.Wallet(privateKey, provider);
-  console.log("Wallet Initialized:", wallet.address);
-  return wallet;
+  return new ethers.Wallet(privateKey, provider);
 }
 
-// Function to create a post using the wallet
-async function createPostWithUserWallet(userAddress, ipfsCid) {
-  const provider = new ethers.JsonRpcProvider(
-    "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID"
-  ); // Replace with actual provider
-  const wallet = await getUserWallet(userAddress, provider);
+// Create Post Endpoint
+app.post("/create-post", async (req, res) => {
+  try {
+    const { userAddress, ipfsCid } = req.body;
+    const wallet = await getUserWallet(userAddress);
+    const postContract = await getContract("DeSocialPosts", wallet);
+    const tx = await postContract.createPost(ipfsCid);
+    await tx.wait();
+    res.json({ success: true, transactionHash: tx.hash });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
-  // Get contract instance with the wallet as a signer
-  const postContract = await getContract("DeSocialPosts", wallet);
+// Edit Post Endpoint
+app.put("/edit-post", async (req, res) => {
+  try {
+    const { userAddress, postId, newCid } = req.body;
+    const wallet = await getUserWallet(userAddress);
+    const postContract = await getContract("DeSocialPosts", wallet);
+    const tx = await postContract.editPost(postId, newCid);
+    await tx.wait();
+    res.json({ success: true, transactionHash: tx.hash });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
-  // Create post transaction
-  const tx = await postContract.createPost(ipfsCid);
-  await tx.wait();
-  console.log("Post Created:", tx.hash);
-}
+// Delete Post Endpoint
+app.delete("/delete-post", async (req, res) => {
+  try {
+    const { userAddress, postId } = req.body;
+    const wallet = await getUserWallet(userAddress);
+    const postContract = await getContract("DeSocialPosts", wallet);
+    const tx = await postContract.deletePost(postId);
+    await tx.wait();
+    res.json({ success: true, transactionHash: tx.hash });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
-// Function to edit a post
-async function editPostWithUserWallet(userAddress, postId, newCid) {
-  const provider = new ethers.JsonRpcProvider(
-    "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID"
-  );
-  const wallet = await getUserWallet(userAddress, provider);
-  const postContract = await getContract("DeSocialPosts", wallet);
-
-  const tx = await postContract.editPost(postId, newCid);
-  await tx.wait();
-  console.log("Post Edited:", tx.hash);
-}
-
-// Function to delete a post
-async function deletePostWithUserWallet(userAddress, postId) {
-  const provider = new ethers.JsonRpcProvider(
-    "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID"
-  );
-  const wallet = await getUserWallet(userAddress, provider);
-  const postContract = await getContract("DeSocialPosts", wallet);
-
-  const tx = await postContract.deletePost(postId);
-  await tx.wait();
-  console.log("Post Deleted:", tx.hash);
-}
+// Start Server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
