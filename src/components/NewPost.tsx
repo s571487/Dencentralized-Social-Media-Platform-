@@ -13,18 +13,27 @@ const NewPost = () => {
   const [media, setMedia] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isPosting, setIsPosting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const getContract = (providerOrSigner: ethers.Provider | ethers.Signer) => {
     return new ethers.Contract(contractAddress, contractABI, providerOrSigner);
   };
 
-  const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleMediaUpload = (file: File) => {
     if (file && file.size <= 5 * 1024 * 1024) {
       setMedia(file);
       setPreviewUrl(URL.createObjectURL(file));
     } else {
       toast.error('File size exceeds 5MB limit.');
+    }
+  };
+
+  const onDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleMediaUpload(file);
     }
   };
 
@@ -50,7 +59,7 @@ const NewPost = () => {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
-      
+
       const { encryptedPrivateKey } = await fetchUserData(provider, userAddress);
       if (!encryptedPrivateKey) throw new Error("DeSocial private key not available");
 
@@ -66,7 +75,7 @@ const NewPost = () => {
 
       const tx = await contract.createPost(description, hashtagsArray, mediaHash, mediaHash);
       await tx.wait();
-      
+
       toast.success("Post created successfully!");
       setDescription('');
       setHashtags('');
@@ -94,13 +103,32 @@ const NewPost = () => {
         />
 
         {!media ? (
-          <label htmlFor="media-upload" className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer">
+          <label
+            htmlFor="media-upload"
+            className={`flex items-center justify-center w-full p-4 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200
+              ${isDragging ? "border-blue-500 bg-blue-50 dark:bg-gray-700" : "border-gray-300 dark:border-gray-600"}`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={onDrop}
+          >
             <div className="flex flex-col items-center space-y-2 text-gray-500 dark:text-gray-400">
               <ImagePlus className="w-8 h-8" />
-              <span>Add photos or videos</span>
+              <span>Drag & drop media here or click to upload</span>
               <span className="text-xs">Maximum file size: 5MB</span>
             </div>
-            <input type="file" accept="image/*,video/*" onChange={handleMediaUpload} className="hidden" id="media-upload" />
+            <input
+              type="file"
+              accept="image/*,video/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleMediaUpload(file);
+              }}
+              className="hidden"
+              id="media-upload"
+            />
           </label>
         ) : (
           <div className="relative">
@@ -114,11 +142,18 @@ const NewPost = () => {
 
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <button
-          className="w-full py-2.5 px-4 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600"
+          className="w-full py-2.5 px-4 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 flex items-center justify-center gap-2"
           onClick={handlePost}
           disabled={isPosting || (!description && !media)}
         >
-          {isPosting ? <><Loader2 className="w-5 h-5 animate-spin" /><span>Posting...</span></> : <span>Post</span>}
+          {isPosting ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Posting...</span>
+            </>
+          ) : (
+            <span>Post</span>
+          )}
         </button>
       </div>
 
