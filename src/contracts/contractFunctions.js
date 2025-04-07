@@ -1,13 +1,19 @@
 import express from "express";
 import { ethers } from "ethers";
 import dotenv from "dotenv";
+import cors from "cors";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(cors()); // Enable CORS if frontend is hosted separately
 
-// Ethereum Provider
+// Validate INFURA URL
+if (!process.env.INFURA_URL) {
+  throw new Error("Missing INFURA_URL in .env");
+}
+
 const provider = new ethers.JsonRpcProvider(process.env.INFURA_URL);
 
 // Smart Contract Details
@@ -28,7 +34,7 @@ const ABIS = {
 };
 
 // Get Contract Instance
-async function getContract(contractName, signerOrProvider) {
+function getContract(contractName, signerOrProvider) {
   return new ethers.Contract(
     CONTRACTS[contractName],
     ABIS[contractName],
@@ -38,55 +44,87 @@ async function getContract(contractName, signerOrProvider) {
 
 // Retrieve User Wallet
 async function getUserWallet(userAddress) {
-  const profileContract = await getContract("DeSocialProfileData", provider);
+  if (!ethers.isAddress(userAddress)) {
+    throw new Error("Invalid Ethereum address");
+  }
+
+  const profileContract = getContract("DeSocialProfileData", provider);
   const [, privateKey] = await profileContract.getUserData(userAddress);
   if (!privateKey)
     throw new Error("User not registered or private key missing");
+
   return new ethers.Wallet(privateKey, provider);
 }
 
-// Create Post Endpoint
+// Routes
 app.post("/create-post", async (req, res) => {
+  const { userAddress, ipfsCid } = req.body;
+
+  if (!userAddress || !ipfsCid) {
+    return res
+      .status(400)
+      .json({ success: false, error: "Missing required fields" });
+  }
+
   try {
-    const { userAddress, ipfsCid } = req.body;
     const wallet = await getUserWallet(userAddress);
-    const postContract = await getContract("DeSocialPosts", wallet);
+    const postContract = getContract("DeSocialPosts", wallet);
     const tx = await postContract.createPost(ipfsCid);
     await tx.wait();
-    res.json({ success: true, transactionHash: tx.hash });
+
+    res.status(201).json({ success: true, transactionHash: tx.hash });
   } catch (error) {
+    console.error("Error creating post:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Edit Post Endpoint
 app.put("/edit-post", async (req, res) => {
+  const { userAddress, postId, newCid } = req.body;
+
+  if (!userAddress || postId == null || !newCid) {
+    return res
+      .status(400)
+      .json({ success: false, error: "Missing required fields" });
+  }
+
   try {
-    const { userAddress, postId, newCid } = req.body;
     const wallet = await getUserWallet(userAddress);
-    const postContract = await getContract("DeSocialPosts", wallet);
+    const postContract = getContract("DeSocialPosts", wallet);
     const tx = await postContract.editPost(postId, newCid);
     await tx.wait();
-    res.json({ success: true, transactionHash: tx.hash });
+
+    res.status(200).json({ success: true, transactionHash: tx.hash });
   } catch (error) {
+    console.error("Error editing post:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Delete Post Endpoint
 app.delete("/delete-post", async (req, res) => {
+  const { userAddress, postId } = req.body;
+
+  if (!userAddress || postId == null) {
+    return res
+      .status(400)
+      .json({ success: false, error: "Missing required fields" });
+  }
+
   try {
-    const { userAddress, postId } = req.body;
     const wallet = await getUserWallet(userAddress);
-    const postContract = await getContract("DeSocialPosts", wallet);
+    const postContract = getContract("DeSocialPosts", wallet);
     const tx = await postContract.deletePost(postId);
     await tx.wait();
-    res.json({ success: true, transactionHash: tx.hash });
+
+    res.status(200).json({ success: true, transactionHash: tx.hash });
   } catch (error) {
+    console.error("Error deleting post:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Start Server
+// Server Listener
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`🚀 Backend running on http://localhost:${PORT}`)
+);
