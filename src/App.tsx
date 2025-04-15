@@ -6,7 +6,7 @@ import LandingPage from "./components/LandingPage";
 import Layout from "./components/Layout";
 import DeSocialABI from "./contracts/DeSocialABI.json"; // Import contract ABI
 
-const CONTRACT_ADDRESS = "0x4aF6DE7c9976C4415c4C6cb48301337C6CCF4d95"; // Replace with your contract address
+const CONTRACT_ADDRESS = "0x577b93176FF7c4a8355E601ba3ac971F0aaDE82f"; // Replace with your contract address
 
 function App() {
   const [isConnected, setIsConnected] = useState(false);
@@ -36,7 +36,7 @@ function App() {
         console.log("contract", contract);
 
         // Check if the user exists in the contract
-        const userExists = await contract.isUserExists(accounts[0]);
+        const userExists = await contract.isUserRegistered(accounts[0]);
         console.log("userExists", userExists);
 
         // Create a new wallet if the user does not exist
@@ -86,7 +86,10 @@ function App() {
       const contract = new ethers.Contract(CONTRACT_ADDRESS, DeSocialABI, signer);
 
       // Send encrypted data to the smart contract
-      const tx = await contract.setUserData(desocialAddress, desocialPrivateKey);
+      const tx = await contract.aasetUserData(
+        desocialAddress,
+        desocialPrivateKey
+      );
       await tx.wait();
 
       console.log("New wallet encrypted and stored on-chain.");

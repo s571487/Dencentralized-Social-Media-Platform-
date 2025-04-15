@@ -1,6 +1,13 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Home, PlusSquare, MessageSquare, Shield, User, Users } from 'lucide-react';
+import React from "react";
+import { motion } from "framer-motion";
+import {
+  Home,
+  PlusSquare,
+  MessageSquare,
+  Shield,
+  User,
+  Users,
+} from "lucide-react";
 
 interface SidebarProps {
   selectedOption: string;
@@ -8,22 +15,30 @@ interface SidebarProps {
   isDarkMode: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ selectedOption, setSelectedOption, isDarkMode }) => {
+const Sidebar: React.FC<SidebarProps> = ({
+  selectedOption,
+  setSelectedOption,
+  isDarkMode,
+}) => {
   const menuItems = [
-    { icon: Home, label: 'Home' },
-    { icon: PlusSquare, label: 'New Post' },
-    { icon: MessageSquare, label: 'Chats' },
-    { icon: Shield, label: 'Validator' },
-    { icon: Users, label: 'Friends' },
-    { icon: User, label: 'Profile' },
+    { icon: Home, label: "Home" },
+    { icon: PlusSquare, label: "New Post" },
+    { icon: MessageSquare, label: "Chats" },
+    { icon: Users, label: "Friends" },
+    { icon: Shield, label: "Validator" },
+    { icon: User, label: "Profile" },
   ];
 
   return (
-    <aside className={`w-64 pr-4 min-h-screen border-r ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
+    <aside
+      className={`w-64 h-[calc(100vh-4rem)] fixed left-0 top-16 border-r ${
+        isDarkMode ? "bg-[#1a1a1a] border-gray-700" : "bg-white border-gray-200"
+      }`}
+    >
       <motion.nav
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="space-y-2 sticky top-20 p-4"
+        className="space-y-2 p-4"
       >
         {menuItems.map((item, index) => (
           <motion.button
@@ -35,11 +50,11 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedOption, setSelectedOption, is
             className={`flex items-center space-x-3 px-4 py-3 w-full rounded-lg transition-all duration-200
               ${
                 selectedOption === item.label
-                  ? 'bg-indigo-500 text-white dark:bg-indigo-600 shadow-md' // Active state
+                  ? "bg-blue-600 text-white shadow-md" // Active state
                   : `${
                       isDarkMode
-                        ? 'text-gray-300 hover:bg-gray-800 hover:text-indigo-400'
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-indigo-600'
+                        ? "text-gray-300 hover:bg-[#2a2a2a] hover:text-blue-400"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
                     }`
               }`}
           >
