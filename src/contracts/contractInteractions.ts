@@ -514,7 +514,9 @@ export const getFriends = async (
     const { encryptedPrivateKey } = await fetchUserData(provider, userAddress);
     const wallet = new ethers.Wallet(encryptedPrivateKey, provider);
     const contract = getContract(wallet);
-    return await contract.getFriends(wallet.address);
+    const friends = await contract.getFriends(wallet.address);
+    console.log(friends)
+    return friends;
   } catch (error) {
     console.error("Error fetching friends:", error);
     throw error;
@@ -623,10 +625,10 @@ export const voteOnReport = async (
 ): Promise<{ success: boolean; txHash: string }> => {
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
-    const { encryptedPrivateKey } = await fetchUserData(provider, userAddress);
+    const accounts = await provider.send("eth_requestAccounts", []);
+    const { encryptedPrivateKey } = await fetchUserData(provider, accounts[0]);
     const wallet = new ethers.Wallet(encryptedPrivateKey, provider);
     const contract = getContract(wallet);
-
     const tx = await contract.voteOnReport(postId, vote);
     await tx.wait();
     return { success: true, txHash: tx.hash };
@@ -776,10 +778,9 @@ export const isActiveValidator = async (
 ): Promise<boolean> => {
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
-    const { encryptedPrivateKey } = await fetchUserData(provider, address);
-    const wallet = new ethers.Wallet(encryptedPrivateKey, provider);
-    const contract = getContract(wallet);
-    return await contract.isActiveValidator(wallet.address);
+    const contract = getContract(provider);
+    const status = await contract.isActiveValidator(address);
+    return status;
   } catch (error) {
     console.error("Error checking validator status:", error);
     throw error;
@@ -791,10 +792,12 @@ export const getReportedPostIds = async (
 ): Promise<number[]> => {
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
-    const { encryptedPrivateKey } = await fetchUserData(provider, userAddress);
+    const accounts = await provider.send("eth_requestAccounts", []);
+    const { encryptedPrivateKey } = await fetchUserData(provider, accounts[0]);
     const wallet = new ethers.Wallet(encryptedPrivateKey, provider);
     const contract = getContract(wallet);
-    return await contract.getReportedPostIds();
+    const reportedPostIds = await contract.getReportedPostIds();
+    return reportedPostIds;
   } catch (error) {
     console.error("Error fetching reported post IDs:", error);
     throw error;
@@ -808,9 +811,7 @@ export const getPostById = async (
 ): Promise<any> => {
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
-    const { encryptedPrivateKey } = await fetchUserData(provider, userAddress);
-    const wallet = new ethers.Wallet(encryptedPrivateKey, provider);
-    const contract = getContract(wallet);
+    const contract = getContract(provider);
     const post = await contract.getPostById(postId);
     return {
       id: post.id.toString(),
